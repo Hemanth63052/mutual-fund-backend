@@ -1,0 +1,21 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: check-yaml
+      - id: check-json
+        exclude: .vscode/launch.json
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: debug-statements
+      - id: detect-private-key
+      - id: check-merge-conflict
+      - id: check-symlinks
+
+  - repo: local
+    hooks:
+      - id: pytest-coverage
+        name: Run tests and check coverage
+        entry: pytest
+        language: python
+        pass_filenames: false

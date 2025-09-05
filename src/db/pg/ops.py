@@ -1,4 +1,6 @@
 from fastapi.encoders import jsonable_encoder
+from sqlalchemy.dialects.postgresql import insert
+
 
 class SQLOps:
     """
@@ -13,7 +15,7 @@ class SQLOps:
         """
         self.session = session
 
-    async def execute_query(self, query, first_result=False, json_result=False):
+    async def execute_query(self, query, first_result: bool = False, json_result: bool = False):
         """
         Execute a SQL query.
 
@@ -23,13 +25,14 @@ class SQLOps:
         :return: The result of the executed query.
         """
         if first_result:
+            if json_result:
+                return jsonable_encoder(self.session.execute(query).mappings().first())
             result = self.session.execute(query).first()
+            return result[0] if result else []
         else:
-            result = self.session.execute(query).all()
-
-        if json_result:
-            result =jsonable_encoder(result.mapping().all()) if hasattr(result, 'mapping') else jsonable_encoder(result.all())
-        return result
+            if json_result:
+                return jsonable_encoder(self.session.execute(query).mappings().all())
+            return self.session.execute(query).all()
 
     async def insert_many(self, data: list, model):
         """
@@ -87,5 +90,22 @@ class SQLOps:
         self.session.commit()
         return result
 
+    async def upsert_query(self, data: dict, model, conflict_columns: list):
+        """
+        Execute an upsert SQL query.
 
-
+        :param data: The data to upsert in the database.
+        :param model: The model class to which the query belongs.
+        :param conflict_columns: The columns to check for conflicts during the upsert operation.
+        :return: The result of the executed upsert query.
+        """
+        insert_stmt = insert(model).values(data)
+        if "updated_at" not in data and hasattr(model, 'updated_at'):
+            data['updated_at'] = model.updated_at
+        upsert_stmt = insert_stmt.on_conflict_do_update(
+            index_elements=conflict_columns,
+            set_=data
+        ).returning(model.id)
+        result = self.session.execute(upsert_stmt)
+        self.session.commit()
+        return str(result.scalar()) if result else None

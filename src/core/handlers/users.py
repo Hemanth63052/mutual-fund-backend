@@ -26,7 +26,8 @@ class UserHandler:
                 message="User with email already exists"
             )
         register_data.password = PasswordHashingUtil.hash_password(register_data.password)
-        await self.sql_handler.insert_new_user(register_data.model_dump())
+        user = await self.sql_handler.insert_new_user(register_data)
+        await self.sql_handler.upsert_portfolio(user_id=user.id)
         return {
             "status": "success",
             "message": "User registered successfully. Please Return Back and Login",
@@ -49,17 +50,28 @@ class UserHandler:
             raise MutualFundException(message="Password is invalid",
                                       code=status.HTTP_401_UNAUTHORIZED)
         access_token = JWTUtil.create_access_token({
-            "user_id": user.id,
-            "email": user.email,
+            "user_id": str(user.id),
+            "email": str(user.email),
         })
-        response.set_cookie(
-            key="access_token",
-            value=access_token,
-            httponly=True,
-            secure=True,
-        )
+        response.headers['Authorization'] = f"{access_token}"
         return {
             "status": "success",
             "message": "User logged in successfully.",
-            "user_id": user.id,
+            "user_id": str(user.id),
+        }
+
+    async def fetch_user_details(self, user_id: str):
+        """
+        Fetch user details by user ID.
+
+        :param user_id: The ID of the user to fetch details for.
+        :return: User details if found.
+        """
+        user = await self.sql_handler.fetch_user_by_id(user_id)
+        if not user:
+            raise MutualFundException(message="User not found.",
+                                      code=status.HTTP_404_NOT_FOUND)
+        return {
+            "status": "success",
+            "data": user,
         }

@@ -8,5 +8,5 @@ class PasswordHashingUtil:
         return pwd_context.hash(password)
 
     @staticmethod
-    def verify_password(stored_password: str, provided_password: str) -> bool:
-        return pwd_context.verify(provided_password, stored_password)
+    def verify_password(provided_password: str, db_password: str) -> bool:
+        return pwd_context.verify(provided_password, db_password)

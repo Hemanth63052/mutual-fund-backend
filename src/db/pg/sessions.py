@@ -3,7 +3,6 @@ from typing import Generator
 
 from sqlalchemy.orm import DeclarativeBase, sessionmaker, Session
 from sqlalchemy import TIMESTAMP, MetaData, create_engine
-from sqlalchemy_utils import create_database, database_exists
 
 from src.config import SQLConfig
 

@@ -1,3 +1,7 @@
+import asyncio
+from contextlib import asynccontextmanager
+from src.scheduler.fund_schema import SchedulerHandler
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -5,6 +9,17 @@ from src.core.routers import all_routers
 
 
 from src.config import ModuleConfig
+
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Start background task
+    task = asyncio.create_task(SchedulerHandler().update_portfolios_task())
+    yield
+    # Clean up
+    task.cancel()
+
 
 app = FastAPI(
     title=f"{ModuleConfig.APP_NAME}",
@@ -17,9 +32,10 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc",
     openapi_url="/openapi.json",
+    lifespan=lifespan
 )
 
-app.include_router(all_routers, prefix="/api")
+app.include_router(all_routers)
 
 app.add_middleware(
     CORSMiddleware,

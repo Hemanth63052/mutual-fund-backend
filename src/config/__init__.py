@@ -69,7 +69,7 @@ class _SQLConfig(BaseSettings):
     This class is used to load environment variables related to SQL database connection.
     """
     SQL_URL: str
-    SQL_DATABASE: str = "mutual_fund"
+    SQL_DATABASE: str = "mutual_funds"
 
     @model_validator(mode="before")
     def validate(cls, values: dict[str, Any]) -> dict[str, Any]:
@@ -87,9 +87,57 @@ class _SQLConfig(BaseSettings):
         values["SQL_URL"] = values["SQL_URL"].strip().rstrip('/')
         return values
 
+class _RapidAPIConfig(BaseSettings):
+    """
+    Configuration settings for RapidAPI.
+    This class is used to load environment variables related to RapidAPI.
+    """
+    RAPIDAPI_KEY: str
+    RAPIDAPI_HOST: str = "example-rapidapi-host.p.rapidapi.com"
+
+    @model_validator(mode="before")
+    def validate(cls, values: dict[str, Any]) -> dict[str, Any]:
+        """
+        Validate the RapidAPI configuration settings.
+        This method can be used to add custom validation logic if needed.
+
+        Args:
+            values (Any): The values to validate.
+        Returns:
+            Self: The validated RapidAPI configuration instance.
+        """
+        if "RAPIDAPI_KEY" not in values or not values["RAPIDAPI_KEY"]:
+            raise ValueError("RAPIDAPI_KEY must be provided")
+        return values
+
+class _SchedulerConfig(BaseSettings):
+    """
+    Configuration settings for Scheduler.
+    This class is used to load environment variables related to Scheduler.
+    """
+    SCHEDULER_ENABLED: bool = True
+    SCHEDULER_INTERVAL_SECONDS: int = 3600  # default to 1 hour
+
+    @model_validator(mode="before")
+    def validate(cls, values: dict[str, Any]) -> dict[str, Any]:
+        """
+        Validate the Scheduler configuration settings.
+        This method can be used to add custom validation logic if needed.
+
+        Args:
+            values (Any): The values to validate.
+        Returns:
+            Self: The validated Scheduler configuration instance.
+        """
+        if "SCHEDULER_ENABLED" in values:
+            values['SCHEDULER_ENABLED'] = values['SCHEDULER_ENABLED'] in ('true', '1')
+        return values
+
 
 ModuleConfig = _ModuleConfig()
 JWTConfig = _JWTConfig()
 SQLConfig = _SQLConfig()
+RapidAPIConfig = _RapidAPIConfig()
+SchedulerConfig = _SchedulerConfig()
 
-__all__ = ["ModuleConfig", "JWTConfig", "SQLConfig"]
+__all__ = ["ModuleConfig", "JWTConfig", "SQLConfig", "RapidAPIConfig", "SchedulerConfig"]
