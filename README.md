@@ -156,9 +156,10 @@ The application includes an automatic portfolio update system that:
 ### Environment Variables for Production
 
 ```env
-SECRET_KEY=generate-a-strong-secret-key-for-jwt
-RAPIDAPI_KEY=your-production-rapidapi-key
-DATABASE_URL=postgresql://username:password@localhost:5432/mutual_fund_db
+JWT_SECRET_KEY = "your super secret jwt key change in production"
+SQL_URL= "your postgresql connection string here"
+RAPIDAPI_KEY = "your-rapidapi-key-here"
+RAPIDAPI_HOST = "latest-mutual-fund-nav.p.rapidapi.com"
 ```
 
 ### Database Migration
