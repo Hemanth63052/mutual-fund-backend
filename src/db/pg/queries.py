@@ -1,5 +1,4 @@
-
-from sqlalchemy import select
+from sqlalchemy import select, func, case, text
 from sqlalchemy.orm import joinedload
 
 from src.db.pg.sql_schemas import Users, FundScheme, Portfolio, Investment, NavHistory
@@ -43,7 +42,15 @@ class SQLQueries:
         :return:
             select: SQLAlchemy select query to fetch all fund families.
         """
-        return select(FundScheme.fund_family).distinct().order_by(FundScheme.fund_family)
+        return select(
+            FundScheme.id,
+            FundScheme.fund_family,
+            FundScheme.scheme_code,
+            FundScheme.scheme_name,
+            FundScheme.fund_type,
+            NavHistory.nav,
+            NavHistory.updated_at,
+        ).join(NavHistory, FundScheme.id == NavHistory.scheme_id).order_by(FundScheme.fund_family)
 
     @staticmethod
     def fetch_schemes_by_family(fund_family: str):
@@ -67,7 +74,8 @@ class SQLQueries:
         :return:
             select: SQLAlchemy select query to fetch NAV by scheme code.
         """
-        return select(*NavHistory.__table__.columns).join(FundScheme, FundScheme.id == NavHistory.scheme_id).where(FundScheme.scheme_code == scheme_code).order_by(NavHistory.updated_at.desc())
+        return select(*NavHistory.__table__.columns).join(FundScheme, FundScheme.id == NavHistory.scheme_id).where(
+            FundScheme.scheme_code == scheme_code).order_by(NavHistory.updated_at.desc())
 
     @staticmethod
     def fetch_fund_scheme_by_id(fund_scheme_id: str):
@@ -131,7 +139,28 @@ class SQLQueries:
             select: SQLAlchemy select query to fetch investments by user ID.
         """
 
-        return select(Investment).options(joinedload(Investment.fund_scheme), joinedload(Investment.portfolio)).join(Portfolio).where(Portfolio.user_id == user_id)
+        return select(Investment.id,
+                      Investment.amount,
+                      Investment.units,
+                      Investment.purchased_nav,
+                      Investment.updated_at,
+                      FundScheme.scheme_name,
+                      FundScheme.scheme_code,
+                      FundScheme.fund_family,
+                      FundScheme.fund_type,
+                      (Investment.units * NavHistory.nav).label('current_value'),
+                      (Investment.units * NavHistory.nav - Investment.amount).label('gain_loss'),
+                      case(
+                            (Investment.amount > 0,
+                             (Investment.units * NavHistory.nav - Investment.amount) / Investment.amount * 100),
+                          else_=0
+                      ).label('returns_pct')
+                    ).join(Portfolio, Investment.portfolio_id == Portfolio.id
+                    ).join(FundScheme, Investment.scheme_id == FundScheme.id
+                    ).join(NavHistory, FundScheme.id == NavHistory.scheme_id
+                    ).where(
+            Portfolio.user_id == user_id,
+            Investment.is_active == True).order_by( Investment.updated_at.desc())
 
     @staticmethod
     def fetch_investments_by_portfolio_id(portfolio_id: str):
@@ -144,4 +173,34 @@ class SQLQueries:
             select: SQLAlchemy select query to fetch investments by portfolio ID.
         """
 
-        return select(Investment).options(joinedload(Investment.fund_scheme), joinedload(Investment.portfolio)).where(Investment.portfolio_id == portfolio_id)
+        return select(Investment).options(joinedload(Investment.fund_scheme), joinedload(Investment.portfolio)).where(
+            Investment.portfolio_id == portfolio_id)
+
+
+    @staticmethod
+    async def get_portfolio_summary_query(user_id):
+        """
+        Returns SQLAlchemy select query for portfolio summary
+        Note: Rounding will be done in Python after getting results
+        """
+        query = (select(
+            func.coalesce(func.sum(Investment.amount), 0).label('total_amount'),
+            func.coalesce(func.sum(Investment.units * NavHistory.nav), 0).label('total_value'),
+            func.coalesce(func.sum((Investment.units * NavHistory.nav) - Investment.amount), 0).label('gain_loss'),
+            case(
+                (func.sum(Investment.amount) > 0,
+                 (func.sum((Investment.units * NavHistory.nav) - Investment.amount) / func.sum(Investment.amount) * 100)
+                 ),
+                else_=0
+            ).label('returns_pct'),
+            func.count(Investment.id).label('total_investments')
+        ).select_from(Investment)
+        .join(Portfolio, Investment.portfolio_id == Portfolio.id)
+        .join(FundScheme, Investment.scheme_id == FundScheme.id)
+        .join(NavHistory, FundScheme.id == NavHistory.scheme_id)
+        .where(
+            Portfolio.user_id == user_id,
+            Investment.is_active == True
+        ))
+
+        return query

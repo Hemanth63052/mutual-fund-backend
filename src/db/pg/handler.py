@@ -53,7 +53,7 @@ class SQLHandler:
         """
         query = SQLQueries.fetch_fund_families()
         result = await self.sql_ops.execute_query(query=query, json_result=True)
-        return [result['fund_family'] for result in result]
+        return result
 
     async def fetch_fund_family_schemes(self, fund_family: str):
         """
@@ -161,15 +161,15 @@ class SQLHandler:
         result = await self.sql_ops.execute_query(query=query, json_result=True)
         return result
 
-    async def fetch_investments_by_portfolio_id(self, portfolio_id: str):
-        """
-        Fetch all investments for a given portfolio ID.
-        :param portfolio_id: The ID of the portfolio to fetch investments for.
-        :return: A list of investments associated with the portfolio.
-        """
-        query = SQLQueries.fetch_investments_by_portfolio_id(portfolio_id)
-        result = await self.sql_ops.execute_query(query=query, json_result=True)
-        return result
+    # async def fetch_investments_by_portfolio_id(self, portfolio_id: str):
+    #     """
+    #     Fetch all investments for a given portfolio ID.
+    #     :param portfolio_id: The ID of the portfolio to fetch investments for.
+    #     :return: A list of investments associated with the portfolio.
+    #     """
+    #     query = SQLQueries.fetch_investments_by_portfolio_id(portfolio_id)
+    #     result = await self.sql_ops.execute_query(query=query, json_result=True)
+    #     return result
 
 
     async def upsert_fund_schemes(self, fund_schemes: dict):
@@ -189,3 +189,14 @@ class SQLHandler:
         :return: The result of the executed upsert query.
         """
         return await self.sql_ops.upsert_query(data=nav_histories, model=NavHistory, conflict_columns=["scheme_id"])
+
+    async def get_portfolio_summary(self, user_id: str):
+        """
+        Fetch portfolio summary for a given user ID.
+        :param user_id: The ID of the user to fetch portfolio summary for.
+        :return: A list of portfolio summaries associated with the user.
+        """
+        query = await SQLQueries.get_portfolio_summary_query(user_id)
+        result = await self.sql_ops.execute_query(query=query, json_result=True)
+        return result
+

@@ -54,6 +54,7 @@ class UserHandler:
             "email": str(user.email),
         })
         response.headers['Authorization'] = f"{access_token}"
+        response.headers["Access-Control-Expose-Headers"] = "Authorization"
         return {
             "status": "success",
             "message": "User logged in successfully.",

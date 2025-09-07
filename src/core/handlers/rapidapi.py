@@ -86,11 +86,8 @@ class RapidAPIHandler:
             raise MutualFundException(message="Fund scheme not found for the given scheme code",
                                       code=status.HTTP_404_NOT_FOUND)
 
-        # Fetch or create a default portfolio for the user
-        portfolio = await self.sql_handler.fetch_portfolios_by_id(portfolio_id=request_data.portfolio_id)
-        if not portfolio:
-            raise MutualFundException(message="Portfolio not found for the given portfolio ID",
-                                      code=status.HTTP_404_NOT_FOUND)
+        if not request_data.portfolio_id:
+            request_data.portfolio_id = await self.sql_handler.upsert_portfolio(user_id=user_id)
 
         # Create the investment record
         create_investment_schema = CreateInvestmentDatabaseModel(
@@ -103,36 +100,36 @@ class RapidAPIHandler:
         await self.sql_handler.create_investment(data=create_investment_schema)
         return SuccessResponseModel(message="Investment created successfully", data=create_investment_schema.model_dump())
 
-    async def fetch_user_portfolio(self, user_id: str):
-        """
-        Fetch the portfolio of a user by user ID.
+    # async def fetch_user_portfolio(self, user_id: str):
+    #     """
+    #     Fetch the portfolio of a user by user ID.
+    #
+    #     :param user_id: The ID of the user to fetch the portfolio for.
+    #     :return: User portfolio details if found.
+    #     """
+    #     portfolio = await self.sql_handler.fetch_portfolio_by_user_id(user_id=user_id)
+    #     return SuccessResponseModel(
+    #         message="User portfolio fetched successfully",
+    #         data={"portfolio": portfolio}
+    #     )
 
-        :param user_id: The ID of the user to fetch the portfolio for.
-        :return: User portfolio details if found.
-        """
-        portfolio = await self.sql_handler.fetch_portfolio_by_user_id(user_id=user_id)
-        return SuccessResponseModel(
-            message="User portfolio fetched successfully",
-            data={"portfolio": portfolio}
-        )
-
-    async def create_user_portfolio(self, user_id: str, create_portfolio: CreatePortfolio):
-        """
-        Create a default portfolio for a user by user ID.
-
-        :param user_id: The ID of the user to create the portfolio for.
-        :param create_portfolio: Data to create a new portfolio.
-        :return: Confirmation message of portfolio creation.
-        """
-        portfolio_status, portfolio_id = await self.sql_handler.create_user_portfolio(user_id=user_id,
-                                                                                      portfolio_data=create_portfolio)
-        if not portfolio_status:
-            raise MutualFundException(message="Portfolio already exists for the user.",
-                                      code=status.HTTP_400_BAD_REQUEST)
-        return SuccessResponseModel(
-            message="User portfolio created successfully",
-            data={"portfolio_id": portfolio_id}
-        )
+    # async def create_user_portfolio(self, user_id: str, create_portfolio: CreatePortfolio):
+    #     """
+    #     Create a default portfolio for a user by user ID.
+    #
+    #     :param user_id: The ID of the user to create the portfolio for.
+    #     :param create_portfolio: Data to create a new portfolio.
+    #     :return: Confirmation message of portfolio creation.
+    #     """
+    #     portfolio_status, portfolio_id = await self.sql_handler.create_user_portfolio(user_id=user_id,
+    #                                                                                   portfolio_data=create_portfolio)
+    #     if not portfolio_status:
+    #         raise MutualFundException(message="Portfolio already exists for the user.",
+    #                                   code=status.HTTP_400_BAD_REQUEST)
+    #     return SuccessResponseModel(
+    #         message="User portfolio created successfully",
+    #         data={"portfolio_id": portfolio_id}
+    #     )
 
     async def fetch_investments_by_user_id(self, user_id: str):
         """
@@ -144,17 +141,48 @@ class RapidAPIHandler:
         investments = await self.sql_handler.fetch_investments_by_user_id(user_id=user_id)
         return SuccessResponseModel(
             message="Investments fetched successfully",
-            data={"investments": investments}
+            data=investments
         )
 
-    async def fetch_investments_by_portfolio_id(self, portfolio_id: str):
+    # async def fetch_investments_by_portfolio_id(self, portfolio_id: str):
+    #     """
+    #     Fetch all investments for a given portfolio ID.
+    #     :param portfolio_id: The ID of the portfolio_id to fetch investments for.
+    #     :return: List of investments if found.
+    #     """
+    #     investments = await self.sql_handler.fetch_investments_by_portfolio_id(portfolio_id=portfolio_id)
+    #     return SuccessResponseModel(
+    #         message="Investments fetched successfully",
+    #         data={"investments": investments}
+    #     )
+
+    async def get_portfolio_summary(self, user_id: str):
         """
-        Fetch all investments for a given portfolio ID.
-        :param portfolio_id: The ID of the portfolio_id to fetch investments for.
-        :return: List of investments if found.
+        Fetch portfolio summary for a given user ID.
+
+        :param user_id: The ID of the user to fetch portfolio summary for.
+        :return: Portfolio summary if found.
         """
-        investments = await self.sql_handler.fetch_investments_by_portfolio_id(portfolio_id=portfolio_id)
+        portfolio_summary = await self.sql_handler.get_portfolio_summary(user_id=user_id)
+        if not portfolio_summary:
+            portfolio_summary =  {
+                'total_amount': 0.0,
+                'total_value': 0.0,
+                'gain_loss': 0.0,
+                'returns_pct': 0.0,
+                'total_investments': 0
+            }
+        else:
+            portfolio_summary = portfolio_summary[0]
+            portfolio_summary =  {
+                'total_amount': round(float(portfolio_summary['total_amount']), 2),
+                'total_value': round(float(portfolio_summary['total_value']), 2),
+                'gain_loss': round(float(portfolio_summary['gain_loss']), 2),
+                'returns_pct': round(float(portfolio_summary['returns_pct']), 2),
+                'total_investments': int(portfolio_summary['total_investments'])
+            }
+
         return SuccessResponseModel(
-            message="Investments fetched successfully",
-            data={"investments": investments}
+            message="Portfolio summary fetched successfully",
+            data=portfolio_summary
         )
