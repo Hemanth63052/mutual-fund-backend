@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, validator
 
 
 class RegisterUser(BaseModel):
@@ -12,6 +12,12 @@ class RegisterUser(BaseModel):
     password: str
     phone_number: str | None = None
     address: str | None = None
+
+    @validator("password")
+    def validate_password(cls, value):
+        if len(value) < 6:
+            raise ValueError("Password must be at least 6 characters long")
+        return value
 
 
 class LoginUser(BaseModel):

@@ -16,7 +16,7 @@ class Users(Base):
     email: Mapped[str] = MappedColumn(nullable=False, unique=True, index=True)
     first_name: Mapped[str] = MappedColumn(nullable=False, index=True)
     last_name: Mapped[str] = MappedColumn(nullable=False, index=True)
-    phone_number: Mapped[str] = MappedColumn(nullable=True, unique=True, index=True)
+    phone_number: Mapped[str] = MappedColumn(nullable=True, index=True)
     address: Mapped[str] = MappedColumn(nullable=True)
     password: Mapped[str] = MappedColumn(nullable=False)
     is_active: Mapped[bool] = MappedColumn(default=True, nullable=False, index=True)

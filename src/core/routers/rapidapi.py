@@ -17,22 +17,6 @@ async def get_fund_families(session=Depends(get_db)):
     """
     return await RapidAPIHandler(session=session).fetch_fund_families()
 
-# @rapidapi_router.get("fund-families/{family_name}/schemes")
-# async def get_schemes_by_family(family_fund: str, session=Depends(get_db)):
-#     """
-#     Endpoint to fetch schemes by fund family from RapidAPI.
-#     This is a placeholder implementation and should be replaced with actual logic to call RapidAPI.
-#     """
-#     return await RapidAPIHandler(session=session).fetch_schemes_by_family(family_name=family_fund)
-#
-# @rapidapi_router.get("fund-families/family/{scheme_code}/nav")
-# async def get_nav_by_scheme_code(scheme_code: str, session=Depends(get_db)):
-#     """
-#     Endpoint to fetch NAV by scheme code from RapidAPI.
-#     This is a placeholder implementation and should be replaced with actual logic to call RapidAPI.
-#     """
-#     return await RapidAPIHandler(session=session).fetch_nav_by_scheme_code(scheme_code=scheme_code)
-
 @rapidapi_router.post("/investment")
 async def create_investment(create_investment_schema:CreateInvestmentModel, session=Depends(get_db), user=Depends(ModuleAuthenticationHandler.get_current_user)):
     """
@@ -57,7 +41,7 @@ async def get_investment_history(session=Depends(get_db), user=Depends(ModuleAut
 #     """
 #     return await RapidAPIHandler(session=session).fetch_investments_by_portfolio_id(portfolio_id=portfolio_id)
 
-@rapidapi_router.get("/portfolios/summary")
+@rapidapi_router.get("/portfolio/summary")
 async def get_portfolios(session=Depends(get_db), user=Depends(ModuleAuthenticationHandler.get_current_user)):
     """
     Endpoint to fetch portfolios.

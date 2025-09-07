@@ -1,6 +1,8 @@
-import asyncio
-from contextlib import asynccontextmanager
+import datetime
+from datetime import timedelta
+
 from src.scheduler.fund_schema import SchedulerHandler
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -9,16 +11,6 @@ from src.core.routers import all_routers
 
 
 from src.config import ModuleConfig
-
-
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    # Start background task
-    task = asyncio.create_task(SchedulerHandler().update_portfolios_task())
-    yield
-    # Clean up
-    task.cancel()
 
 
 app = FastAPI(
@@ -32,7 +24,6 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc",
     openapi_url="/openapi.json",
-    lifespan=lifespan
 )
 
 app.include_router(all_routers)
@@ -60,3 +51,27 @@ async def root():
     Returns a simple message indicating the API is running.
     """
     return {"message": f"Welcome to the {ModuleConfig.APP_NAME}!"}
+
+
+# Create scheduler
+scheduler = AsyncIOScheduler()
+
+@app.on_event("startup")
+async def start_scheduler():
+    handler = SchedulerHandler()
+
+    # Schedule the job (every 30 seconds for example)
+    scheduler.add_job(
+        handler.update_all_portfolios,
+        "interval",
+        minutes=60, # Run every 60 minutes
+        # next_run_time=datetime.datetime.now()+timedelta(seconds=10)
+    )
+
+    scheduler.start()
+    print("Scheduler started!")
+
+@app.on_event("shutdown")
+async def shutdown_scheduler():
+    scheduler.shutdown()
+    print("Scheduler stopped!")

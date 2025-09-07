@@ -200,3 +200,19 @@ class SQLHandler:
         result = await self.sql_ops.execute_query(query=query, json_result=True)
         return result
 
+    async def bulk_upsert_fund_schemes(self, fund_schemes: list[dict]):
+        """
+        Bulk upsert multiple fund scheme records in the database.
+
+        :param fund_schemes: A list of dictionaries containing fund scheme data.
+        :return: A dictionary mapping scheme codes to their corresponding IDs.
+        """
+        return await self.sql_ops.bulk_upsert_fund_schemes(data_list=fund_schemes, model=FundScheme, conflict_columns=['scheme_code'])
+
+    async def bulk_upsert_nav_history(self, nav_histories: list[dict]):
+        """
+        Bulk upsert multiple NAV history records in the database.
+        """
+
+        return await self.sql_ops.bulk_upsert_nav_history(data_list=nav_histories, model=NavHistory, conflict_columns=["scheme_id"])
+

@@ -212,6 +212,10 @@ curl -X POST "http://localhost:8000/api/auth/register" \
   -H "Content-Type: application/json" \
   -d '{
     "email": "user@example.com",
+    "first_name": "John",
+    "last_name": "Doe",
+    "phone_number": "1234567890",
+    "address": "123 Main St",
     "password": "securepass123"
   }'
 ```
@@ -230,7 +234,7 @@ curl -X POST "http://localhost:8000/api/auth/login" \
 ### Get Portfolio
 
 ```bash
-curl -X GET "http://localhost:8000/api/portfolio" \
+curl -X GET "http://localhost:8000/api/portfolio/summary" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN"
 ```
 
@@ -252,7 +256,7 @@ curl -X GET "http://localhost:8000/api/portfolio" \
    - Install all requirements: `pip install -r requirements.txt`
 
 4. **JWT token errors**
-   - Ensure `SECRET_KEY` is set in `.env` file
+   - Ensure `JWT_SECRET_KEY` is set in `.env` file
    - Use a strong, unique secret key for production
 
 ### Development Tips

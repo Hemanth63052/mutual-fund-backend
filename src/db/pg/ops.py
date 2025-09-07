@@ -109,3 +109,48 @@ class SQLOps:
         result = self.session.execute(upsert_stmt)
         self.session.commit()
         return str(result.scalar()) if result else None
+
+    async def bulk_upsert_fund_schemes(self, data_list: list[dict], model, conflict_columns: list):
+        if not data_list:
+            return {}
+
+        stmt = insert(model).values(data_list)
+
+        update_dict = {
+            col.name: stmt.excluded[col.name]
+            for col in model.__table__.columns
+            if col.name not in conflict_columns and col.name != "id"
+        }
+
+        upsert_stmt = stmt.on_conflict_do_update(
+            index_elements=conflict_columns,
+            set_=update_dict
+        ).returning(model.scheme_code, model.id)
+
+        result = await self.session.execute(upsert_stmt)
+        await self.session.commit()
+
+        # Build mapping {scheme_code: scheme_id}
+        return {row[0]: row[1] for row in result.fetchall()}
+
+    async def bulk_upsert_nav_history(self, data_list: list[dict], model, conflict_columns: list):
+        if not data_list:
+            return {}
+
+        stmt = insert(model).values(data_list)
+
+        update_dict = {
+            col.name: stmt.excluded[col.name]
+            for col in model.__table__.columns
+            if col.name not in conflict_columns and col.name != "id"
+        }
+
+        upsert_stmt = stmt.on_conflict_do_update(
+            index_elements=conflict_columns,
+            set_=update_dict
+        )
+
+        await self.session.execute(upsert_stmt)
+        await self.session.commit()
+
+        return None

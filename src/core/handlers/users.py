@@ -22,7 +22,7 @@ class UserHandler:
         """
         if await self.sql_handler.check_user_exists_by_mail(register_data.email):
             raise MutualFundException(
-                code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                code=status.HTTP_409_CONFLICT,
                 message="User with email already exists"
             )
         register_data.password = PasswordHashingUtil.hash_password(register_data.password)
@@ -47,7 +47,7 @@ class UserHandler:
                                       code=status.HTTP_404_NOT_FOUND)
 
         if not PasswordHashingUtil.verify_password(login_data.password, user.password):
-            raise MutualFundException(message="Password is invalid",
+            raise MutualFundException(message="Invalid Password",
                                       code=status.HTTP_401_UNAUTHORIZED)
         access_token = JWTUtil.create_access_token({
             "user_id": str(user.id),

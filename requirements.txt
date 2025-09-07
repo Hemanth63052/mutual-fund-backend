@@ -9,3 +9,4 @@ psycopg2-binary>=2.9.10
 pyjwt>=2.8.0
 passlib>=1.7.4
 bcrypt>=3.2.0
+apscheduler>=3.10.1
